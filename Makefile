@@ -1,34 +1,27 @@
+##
+## Makefile for Headergen in /home/ratouney/header
+## 
+## Made by 
+## Login   <ratouney >
+## 
+## Started on  Wed May 17 14:20:56 2017 Jean Pignouf
+## Last update Wed May 17 14:21:41 2017 
+##
+
 CC	=	gcc
 
-NAME	=	header
+NAME	=	header-generator
 
-SRC	=	calib_add.c             \
-                calib_char.c            \
-                calib_copy.c            \
-                calib_export.c          \
-                calib_import.c          \
-                calib_nbr.c     \
-                calib_rem.c     \
-                calib_show.c            \
-                calib_write.c          \
-                charray.c          \
-                destroy_charray.c          \
-                fillgen.c          \
-                get_next_line.c          \
-                headergen.c          \
-                my_strpaste.c          \
-                newcharray.c 
+SRC	=	main.c
 
-OBJ		=	$(SRC:.c=.o)
+OBJ	=	$(SRC:.c=.o)
 
-INCLUDE	=
+INCLUDE	=	-I./include
 
 CFLAGS	+=	$(INCLUDE) -g
 
-LDFLAGS	+=
-
 $(NAME):	$(OBJ)
-	$(CC) -Ofast -o $(NAME) $(OBJ)
+	$(CC) -o $(NAME) $(OBJ)
 
 all:	$(NAME)
 
