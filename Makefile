@@ -5,7 +5,7 @@
 ## Login   <ratouney >
 ## 
 ## Started on  Wed May 17 14:20:56 2017 Jean Pignouf
-## Last update Wed May 17 14:21:41 2017 
+## Last update Wed May 17 14:25:51 2017 
 ##
 
 CC	=	gcc
@@ -16,19 +16,24 @@ SRC	=	main.c
 
 OBJ	=	$(SRC:.c=.o)
 
-INCLUDE	=	-I./include
+INCLUDE	=	-I./include -I./lib/include
 
 CFLAGS	+=	$(INCLUDE) -g
 
 $(NAME):	$(OBJ)
-	$(CC) -o $(NAME) $(OBJ)
+	make -C./lib
+	cp lib/librat.a .
+	$(CC) -o $(NAME) $(OBJ)	-L./ -lrat
 
 all:	$(NAME)
 
 clean:
+	make clean -C./lib
 	rm -f $(OBJ)
 
 fclean:	clean
+	make fclean -C./lib
+	rm -f librat.a
 	rm -f $(NAME)
 
 re:	fclean all
