@@ -4,38 +4,32 @@
 ## Made by 
 ## Login   <ratouney >
 ## 
-## Started on  Wed May 17 14:20:56 2017 Jean Pignouf
-## Last update Wed May 17 14:25:51 2017 
+## Started on  Thu May 18 13:02:10 2017 Jean Pignouf
+## Last update Thu May 18 13:07:23 2017 
 ##
-
-CC	=	gcc
-
-NAME	=	header-generator
 
 SRC	=	main.c
 
 OBJ	=	$(SRC:.c=.o)
 
-INCLUDE	=	-I./include -I./lib/include
+NAME	=	header-generator
 
-CFLAGS	+=	$(INCLUDE) -g
+CFLAGS	+=	-I./include -I./lib/include -W -Wall -Wextra -g
+
+all:		$(NAME)
 
 $(NAME):	$(OBJ)
 	make -C./lib
-	cp lib/librat.a .
-	$(CC) -o $(NAME) $(OBJ)	-L./ -lrat
-
-all:	$(NAME)
+	gcc -o $(NAME) $(OBJ) -L./ -lrat
 
 clean:
 	make clean -C./lib
 	rm -f $(OBJ)
 
-fclean:	clean
+fclean:		clean
 	make fclean -C./lib
-	rm -f librat.a
 	rm -f $(NAME)
 
-re:	fclean all
+re:		fclean all
 
-.PHONY:	all clean fclean re
+.PHONY: all clean fclean re
