@@ -5,7 +5,7 @@
 ## Login   <ratouney >
 ## 
 ## Started on  Thu May 18 13:02:10 2017 Jean Pignouf
-## Last update Thu May 18 13:07:23 2017 
+## Last update Thu May 18 14:26:14 2017 
 ##
 
 SRC	=	main.c
@@ -31,5 +31,9 @@ fclean:		clean
 	rm -f $(NAME)
 
 re:		fclean all
+
+opti:		$(OBJ)
+	make -C./lib
+	gcc -Ofast -o $(NAME) $(OBJ) -L./ -lrat
 
 .PHONY: all clean fclean re
