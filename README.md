@@ -1,0 +1,3 @@
+# Header Generator for C projects
+
+Just type --help if you really have no fucking idea of what you are doing...
