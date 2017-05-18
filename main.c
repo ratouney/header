@@ -5,11 +5,18 @@
 ** Login   <ratouney >
 ** 
 ** Started on  Wed May 17 14:21:53 2017 Jean Pignouf
-** Last update Thu May 18 15:50:39 2017 
+** Last update Fri May 19 00:34:53 2017 
 */
 
 #include <dirent.h>
 #include "flemme.h"
+
+typedef struct	s_config
+{
+  char		*folder;
+  char		*filename;
+  char		*login;
+}		t_config;
 
 typedef struct	s_func
 {
@@ -39,8 +46,6 @@ typedef struct	s_file
   
   struct s_file *next;
 }		t_file;
-
-
 
 char		**copytab(char **ding, int mode)
 {
@@ -354,49 +359,223 @@ void		retlenlist(t_file *list, t_ret **given)
       while (fns)
 	{
 	  if (isinretlist(retlist, fns->ret) == 0)
-	    add_to_retlist(&retlist, fns->ret, 0);
+	      add_to_retlist(given, fns->ret, 0);
 	  fns = fns->next;
 	}
       temp = temp->next;
     }
 }
 
-void		print_func(t_file *list)
+int		longest_ret(t_ret *list)
 {
+  int		max;
+  t_ret		*temp;
+
+  max = 0;
+  temp = list;
+  while (temp)
+    {
+      if (temp->len > max)
+	max = temp->len;
+      temp = temp->next;
+    }
+  return (max);
+}
+
+void		my_putchars(int fd, char c, int num)
+{
+  int		count;
+
+  count = -1;
+  while (++count < num)
+    write(fd, &c, 1);    
+}
+
+void		print_header(int fd, char *user)
+{
+  char *data;
+  time_t mytime;
+  mytime = time(NULL);
+  data = ctime(&mytime);
+  
+  dprintf(fd, "/*\n");
+  dprintf(fd, "** Header for project in %s\n", getenv("PWD"));
+  dprintf(fd, "**\n");
+  dprintf(fd, "** Made by %s\n", getenv("USER"));
+  dprintf(fd, "** Login <%s@epitech.eu>\n", user);
+  dprintf(fd, "**\n");
+  dprintf(fd, "** Started on  %s %s\n", stcl(data, 0, my_strlen(data) - 1, 0), getenv("USER"));
+  dprintf(fd, "** Last update %s %s\n", stcl(data, 0, my_strlen(data) - 1, 0), getenv("USER"));
+  dprintf(fd, "*/\n");
+}
+
+char		*capitalize_h(char *str)
+{
+  int		count;
+  char		*new;
+
+  new = malloc(sizeof(char) * (my_strlen(str) + 2));
+  count = 0;
+  while (str[count])
+    {
+      if (str[count] >= 'a' && str[count] <= 'z')
+	new[count] = str[count] - 32;
+      else if (str[count] == '.' || str[count] == '-' || str[count] == ' ')
+	new[count] = '_';
+      else
+	new[count] = str[count];
+      count++;
+    }
+  new[count] = '_';
+  new[count + 1] = '\0';
+  return (new);
+}
+
+void		print_func(t_file *list, char *output, char *user)
+{
+  int		fd;
   t_file	*temp;
   t_ret		*retlist = NULL;
   int		maxlen;
+  int		curlen;
   t_func	*data;
 
+  fd = open(output, O_WRONLY | O_CREAT | O_TRUNC);
+  chmod(output, S_IRUSR|S_IRGRP|S_IROTH|S_IWUSR|S_IWGRP|S_IWOTH);
+  print_header(fd, user);
+  dprintf(fd, "\n");
+  dprintf(fd, "#ifndef %s\n", capitalize_h(output));
+  dprintf(fd, "# define %s\n", capitalize_h(output));
   retlenlist(list, &retlist);
+  maxlen = longest_ret(retlist);
   temp = list;
   while (temp)
     {
       data = temp->func;
-      printf("\n/*\n** %s\n*/\n\n", temp->name);
+      if (data == NULL)
+	{
+	  temp = temp->next;
+	  continue;
+	}
+      dprintf(fd, "\n/*\n** %s\n*/\n\n", temp->name);
       while (data)
 	{
-	  printf("[RTTYPE]");
-	  printf("  %s%s(%s);\n", (data->ptr == NULL ? "" : data->ptr), data->name, data->arg);
+	  curlen = my_strlen(data->ret);
+	  if (curlen < maxlen)
+	    {
+	      write(fd, data->ret, my_strlen(data->ret));
+	      write(fd, "\t", 1);
+	    }
+	  else
+	    {
+	      write(fd, data->ret, my_strlen(data->ret));
+	      write(fd, "\t", 1);
+	    }
+	  dprintf(fd, "%s%s(%s);\n", (data->ptr == NULL ? "" : data->ptr), data->name, (data->arg == NULL ? "void" : data->arg));
 	  data = data->next;
 	}
       temp = temp->next;
     }
+  dprintf(fd, "\n#endif /* !%s */\n", capitalize_h(output));
+}
+
+int		get_config(t_config *config, int argc, char **argv)
+{
+  int count;
+
+  config->folder = NULL;
+  config->login = NULL;
+  config->filename = NULL;
+  count = 1;
+  while (argv[count])
+    {
+      if (my_strcmp(argv[count], "-d") == 0 || my_strcmp(argv[count], "--directory") == 0)
+	{
+	  if (argv[count + 1] == NULL)
+	    {
+	      printf("header-generator: option requires an argument -- '%s'.\n", argv[count]);
+	      return (-1);
+	    }
+	  if (access(argv[count + 1], R_OK) != 0)
+	    {
+	      printf("header-generator: Could not access folder %s.\n", argv[count + 1]);
+	      return (-1);
+	    }
+	  else
+	    config->folder = stcl(argv[count + 1], 0, 0, 0);
+	  count++;
+	}
+      else if (my_strcmp(argv[count], "-u") == 0 || my_strcmp(argv[count], "--username") == 0)
+	{
+	  if (argv[count + 1] == NULL)
+	    {
+	      printf("header-generator: option requires an argument -- '%s'.\n", argv[count]);
+	      return (-1);
+	    }
+	  else
+	    config->login = stcl(argv[count + 1], 0, 0, 0);
+	  count++;
+	}
+      else if (my_strcmp(argv[count], "-f") == 0 || my_strcmp(argv[count], "--filename") == 0)
+	{
+	  if (argv[count + 1] == NULL)
+	    {
+	      printf("header-generator: option requires an argument -- '%s'.\n", argv[count]);
+	      return (-1);
+	    }
+	  else
+	    config->filename = stcl(argv[count + 1], 0, 0, 0);
+	  count++;
+	}
+      else if (my_strcmp(argv[count], "-h") == 0 || my_strcmp(argv[count], "--help") == 0)
+	{
+	  printf("\e[32mUSAGE\e[39m: header-generator [-d|--directory] [-f|--filename] [-u|--username]\n");
+	  printf("\n\e[33mDirectory\e[39m :\n");
+	  printf("\tSpecifies the starting directory to look for source files\n");
+	  printf("\tBy default, current folder is selected [./]\n");
+	  printf("\n\e[33mFilename\e[39m :\n");
+	  printf("\tSpecifies the name of the output file, which is overwritten\n");
+	  printf("\tBy default, output file is called [header.h]\n");
+	  printf("\n\e[33mUsername\e[39m :\n");
+	  printf("\tSpecifies the username to be applied in the header\n");
+	  printf("\tBy default, the system username is taken [%s]\n", getenv("USER"));
+	  printf("\n\nMade by Ratouney\nMore info :\n\t\e[36mhttp://github.com/ratouney/header\e[39m\n");
+	  return (-1);
+	}
+	count++;
+    }
+  if (config->folder == NULL)
+    config->folder = stcl("./", 0, 0, 0);
+  if (config->login == NULL)
+    config->login = getenv("USER");
+  if (config->filename == NULL)
+    config->filename = stcl("header.h", 0, 0, 0);
+  return (0);
 }
 
 int		main(int argc, char **argv)
 {
-  t_file *list;
+  t_config	config;
+  t_file	*list;
+  char		*output;
+  char		*user;
 
+  if (get_config(&config, argc, argv) == -1)
+    return (1);
   list = NULL;
-  if (argc >= 2)
-    scan_dir(&list, argv[1], 1);
+  scan_dir(&list, config.folder, 1);
+  if (argc >= 3 || argv[2] == NULL)
+    output = argv[2];
   else
-    scan_dir(&list, "./", 1);
+    output = fuse(fuse(getenv("PWD"), "--", 0), "header.h", 0);
+  if (argc >= 4)
+    user = argv[3];
+  else
+    user = getenv("USER");
   load_stuff(list);
-  clear_lines(list);
+  //clear_lines(list);
   lf_void(list);
-  print_func(list);
+  print_func(list, config.filename, config.login);
   free_list(list);
   return (0);
 }
